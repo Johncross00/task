@@ -1,6 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:task/services/todo_services.dart';
+
+import '../utils/snackbar_helper.dart';
 
 class AddTodoPage extends StatefulWidget {
   final Map? todo;
@@ -64,80 +65,77 @@ class _AddToPageState extends State<AddTodoPage> {
     }
     final id = todo['_id'];
     final isCompleted = todo['is_completed'];
-    final title = titleController.text;
-    final description = descriptionController.text;
-    final body = {
-      "title": title,
-      "description": description,
-      "is_completed": false,
-  };
+  //   final title = titleController.text;
+  //   final description = descriptionController.text;
+  //   final body = {
+  //     "title": title,
+  //     "description": description,
+  //     "is_completed": false,
+  // };
     final url = 'https://api.nstack.in/v1/todos/$id';
     final uri = Uri.parse(url);
-    final response = await http.put(
-      uri,
-      body: jsonEncode(body),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    );
-    if (response.statusCode == 200) {
+    final isSucess = await TodoService.updateTodo(id, body);
+    if (isSucess) {
       titleController.text = '';
       descriptionController.text = '';
-      showSuccessMessage("Update Success");
+      showSuccessMessage(context, message: "Update Success");
     } else {
-      showErrorMessage("Update failed");
+      showErrorMessage(context, message: "Update failed");
     }
   }
   Future<void> submitData() async {
     // Get the data from the form
-    final title = titleController.text;
-    final description = descriptionController.text;
-    final body = {
-      "title": title,
-      "description": description,
-      "is_completed": false,
-    };
+    // final title = titleController.text;
+    // final description = descriptionController.text;
+    // final body = {
+    //   "title": title,
+    //   "description": description,
+    //   "is_completed": false,
+    // };
     print("Submitting data...");  // Add this line
 
 
     // Submit to the server
     final url = 'https://api.nstack.in/v1/todos';
     final uri = Uri.parse(url);
-    final response = await http.post(
-      uri,
-      body: jsonEncode(body),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    );
+    final isSucess = await TodoService.addTodo(body);
     print("Submitting data to the server...");  // Add this line
 
 
     // Show success or fail message based on the status code
-    if (response.statusCode == 201) {
+    if (isSucess) {
       titleController.text = '';
       descriptionController.text = '';
-      showSuccessMessage("Creation Success");
+      showSuccessMessage(context, message: "Creation Success");
     } else {
-      showErrorMessage("Creation failed");
+      showErrorMessage(context, message: "Creation failed");
     }
   }
 
-  void showSuccessMessage(String message) {
-    final snackBar = SnackBar(
-      content: Text(message),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
+  // void showSuccessMessage(BuildContext context, {required String message}) {
+  //   final snackBar = SnackBar(
+  //     content: Text(message),
+  //   );
+  //   ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  // }
 
-  void showErrorMessage(String message) {
-    final snackBar = SnackBar(
-      content: Text(
-        message,
-        style: TextStyle(color: Colors.white),
-      ),
-      backgroundColor: Colors.red,
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
+  // void showErrorMessage(BuildContext context) {
+  //   final snackBar = SnackBar(
+  //     content: Text(
+  //       message,
+  //       style: TextStyle(color: Colors.white),
+  //     ),
+  //     backgroundColor: Colors.red,
+  //   );
+  //   ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  // }
+Map get body{
+  final title = titleController.text;
+  final description = descriptionController.text;
+  return {
+    "title": title,
+    "description": description,
+    "is_completed": false,
+  };
+}
 }

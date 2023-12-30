@@ -3,8 +3,10 @@ import 'package:flutter_clean_architecture/flutter_clean_architecture.dart';
 import 'package:task/screens/todo_list.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});

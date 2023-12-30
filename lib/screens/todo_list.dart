@@ -1,8 +1,10 @@
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:task/screens/add_page.dart';
-import 'package:http/http.dart' as http;
+import 'package:task/services/todo_services.dart';
+import 'package:task/widget/todo_card.dart';
+
+import '../utils/snackbar_helper.dart';
 class TodoListPage extends StatefulWidget {
   const TodoListPage({super.key});
 
@@ -26,48 +28,33 @@ class _TodoListPageState extends State<TodoListPage> {
       ),
       body: Visibility(
         visible: isLoading,
-          child: Center(
+        child: Center(
           child: CircularProgressIndicator(),
         ),
-        replacement: RefreshIndicator(
+        replacement: items.isEmpty
+            ? Center(
+          child: Text('No items available.', style: Theme.of(context).textTheme.headlineLarge,),
+        )
+            : RefreshIndicator(
           onRefresh: fetchTodo,
           child: ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (context, index){
-                final item = items[index] as Map;
-                final id = item['_id'] as String;
-            return ListTile(
-              leading: CircleAvatar(child: Text('${index + 1}')),
-              title: Text(item['title']),
-              subtitle: Text(item['description']),
-              trailing: PopupMenuButton(
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    navigateToEditPage(item);
-                    // update
-                  }else if (value == 'delete') {
-                    // delete and remove item
-                    deleteById(id);
-                  }
-                },
-                  itemBuilder: (context) {
-                    return [
-                      PopupMenuItem(child: Text('Edit'),
-                        value: 'edit',
-                      ),
-                      PopupMenuItem(child: Text('Delete'),
-                        value: 'delete',
-                      ),
-                    ];
-                  }
-              ),
-            );
-          }),
+            itemCount: items.length,
+            padding: EdgeInsets.all(8),
+            itemBuilder: (context, index) {
+              final item = items[index] as Map;
+              final id = item['_id'] as String;
+              return TodoCard(index: index,
+                  item: item,
+                  navigateEdit: navigateToEditPage,
+                  deleteById: deleteById);
+            },
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-          onPressed: navigateToAddPage,
-          label: Text("Add Todo"))
+          onPressed: () async {
+            await navigateToAddPage();
+          }, label: Text("Add Todo")),
     );
   }
   Future<void> navigateToAddPage() async {
@@ -93,10 +80,10 @@ class _TodoListPageState extends State<TodoListPage> {
 
   Future<void> deleteById(String id) async{
     //delete the item
-    final url = 'https://api.nstack.in/v1/todos/$id';
-    final uri = Uri.parse(url);
-    final response = await http.delete(uri);
-    if (response.statusCode == 200) {
+    // final url = 'https://api.nstack.in/v1/todos/$id';
+    // final uri = Uri.parse(url);
+    final isSuccess = await TodoService.deleteById(id);
+    if (isSuccess) {
       //delete the item
       final filtered  = items.where((element) => element['_id'] != id).toList();
       setState(() {
@@ -105,30 +92,31 @@ class _TodoListPageState extends State<TodoListPage> {
       showSuccessMessage('item deleted successfully');
     }else{
       //show the error
-      showErrorMessage('Deletion failed');
+      showErrorMessage(context, message: 'Deletion failed');
     }
     //remove the item
   }
   Future<void> fetchTodo() async {
     print("Fetching todo...");  // Add this line
-    setState(() {
-      isLoading = true;
-    });
-    final url ='https://api.nstack.in/v1/todos?page=1&limit=10';
-    final uri = Uri.parse(url);
-    final response = await http.get(uri);
-   if (response.statusCode == 200) {
-     final json = jsonDecode(response.body) as Map;
-     final result = json['items'] as List;
+    // setState(() {
+    //   isLoading = true;
+    // });
+
+    // final url ='https://api.nstack.in/v1/todos?page=1&limit=10';
+    // final uri = Uri.parse(url);
+    final response = await TodoService.fetchTodos();
+   if (response != null) {
      setState(() {
-       items = result;
+       items = response;
      });
+   }else {
+     showErrorMessage(context, message: 'Something went wrong');
    }
    setState(() {
      isLoading = false;
    });
-     print(response.statusCode);
-    print(response.body);
+    //  print(response.statusCode);
+    // print(response.body);
   }
   void showSuccessMessage(String message) {
     final snackBar = SnackBar(
@@ -137,14 +125,14 @@ class _TodoListPageState extends State<TodoListPage> {
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-  void showErrorMessage(String message) {
-    final snackBar = SnackBar(
-      content: Text(
-        message,
-        style: TextStyle(color: Colors.white),
-      ),
-      backgroundColor: Colors.red,
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
+//   void showErrorMessage(String message) {
+//     final snackBar = SnackBar(
+//       content: Text(
+//         message,
+//         style: TextStyle(color: Colors.white),
+//       ),
+//       backgroundColor: Colors.red,
+//     );
+//     ScaffoldMessenger.of(context).showSnackBar(snackBar);
+//   }
 }
